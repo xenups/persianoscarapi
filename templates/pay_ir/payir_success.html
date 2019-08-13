@@ -1,0 +1,14 @@
+{% extends 'payir_base.html' %}
+{% block content %}
+<h4 class="success">پرداخت موفقیت آمیز</h4>
+<div>
+    <p>مبلغ: {{ amount }} ریال</p>
+    <p>شماره پیگیری: {{ trace_number }}</p>
+    <p>{{ card_number  }} : شماره کارت</p>
+    <p>{{ factor_number  }} : شماره فاکتور</p>
+    <p>{{ mobile  }} : شماره همراه</p>
+    <p>{{ description  }} : توضیحات</p>
+    <p>{{ message  }} : پیغام</p>
+
+</div>
+{% endblock %}

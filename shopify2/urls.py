@@ -17,7 +17,7 @@ from django.conf.urls import url
 from django.views.generic import RedirectView
 from oscar.app import application as oscar
 from oscar.app import application
-#t
+# t
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
@@ -34,6 +34,8 @@ urlpatterns = [
     path('oscarapi/', api.urls),
     # url(r'^$', RedirectView.as_view(url='/catalogue/')),
     url(r'', application.urls),
+    url(r'^checkout/paypal/', include('paypal.express.urls')),
+    url(r'^payment/', include('pay_ir.urls'))
 
     # The Django admin is not officially supported; expect breakage.
     # Nonetheless, it's often useful for debugging.

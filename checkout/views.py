@@ -2,19 +2,54 @@ import os
 
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
+from django.views.generic import RedirectView
 from guardian.shortcuts import assign_perm
-from oscar.apps.checkout.views import PaymentDetailsView as BasePaymentDetailsView, ThankYouView as ThankYouViewBasement
+from oscar.apps.checkout.views import PaymentDetailsView as BasePaymentDetailsView, \
+    ThankYouView as ThankYouViewBasement, OrderPlacementMixin, Basket
+from oscar.apps.payment.admin import SourceType
+from oscar.apps.payment.models import Source
+from paymentexpress.gateway import PURCHASE
+
 import digital
 from checkout.tasks import download_process
 from digital import views
+from oscar.apps.payment.exceptions import *
+import requests
+import datetime
+from oscar.apps.payment.forms import BankcardForm
 
 # Create your views here.
 from digital.models import Abstractdigital
 from shopify2 import settings
 
-
 class globals():
     dl_link = ""
+
+
+class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
+    permanent = False
+
+    def get_redirect_url(self, pk):
+        print("hello khare")
+        basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
+        # basket.strategy = CustomStrategy()
+        order_number = self.checkout_session.get_order_number()
+        shipping_address = self.get_shipping_address(basket)
+        shipping_method = self.get_shipping_method(basket, shipping_address)
+        shipping_charge = shipping_method.calculate(basket)
+        billing_address = self.get_billing_address(shipping_address)
+        order_total = self.get_order_totals(basket, shipping_charge=shipping_charge)
+        order_kwargs = {}
+        # make sure payment was actually paid
+        # CustomPayment.objects.get(order_number=order_number, payed_sum=str(float(order_total.incl_tax)))
+        user = self.request.user
+        if not user.is_authenticated():
+            order_kwargs['guest_email'] = self.checkout_session.get_guest_email()
+        self.handle_order_placement(
+            order_number, user, basket, shipping_address, shipping_method,
+            shipping_charge, billing_address, order_total, **order_kwargs
+        )
+        return '/checkout/thank-you/'
 
 
 class PaymentDetailsView(BasePaymentDetailsView):

@@ -42,6 +42,9 @@ CELERY_AMQP_TASK_RESULT_EXPIRES = 1000
 
 ALLOWED_HOSTS = ['192.168.1.108', '*']
 
+PAYPAL_API_USERNAME = 'xenups-facilitator_api1.outlook.com'
+PAYPAL_API_PASSWORD = '2T6697D6TBDVLUB2'
+PAYPAL_API_SIGNATURE = 'A7p6fVEnuk.MdrcJwzVkpTMf2gU0AFGHF6xFDE5Vh35S-7iZ7OksA2qc'
 # Application definition
 
 INSTALLED_APPS = [
@@ -65,10 +68,18 @@ INSTALLED_APPS = [
                      'promotions',
                      'digital',
                      'guardian',
+                     'paypal',
+                     'pay_ir',
 
                  ] + get_core_apps()
 
 SITE_ID = 1
+
+from django.utils.translation import ugettext_lazy as _
+
+PAY_IR_CONFIG = {
+    "api_key": "test"
+}
 
 LOGIN_REDIRECT_URL = '/'
 OSCAR_RECENTLY_VIEWED_PRODUCTS = 20
@@ -80,7 +91,6 @@ THUMBNAIL_KVSTORE = env(
     'THUMBNAIL_KVSTORE',
     default='sorl.thumbnail.kvstores.cached_db_kvstore.KVStore')
 THUMBNAIL_REDIS_URL = env('THUMBNAIL_REDIS_URL', default=None)
-
 
 AUTHENTICATION_BACKENDS = (
     'oscar.apps.customer.auth_backends.EmailBackend',
@@ -114,11 +124,11 @@ ROOT_URLCONF = 'shopify2.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates/oscar'),
-                 OSCAR_MAIN_TEMPLATE_DIR
-                 ]
+        'DIRS': [os.path.join(BASE_DIR, 'templates/pay_ir'), os.path.join(BASE_DIR, 'templates/oscar'),
+                 OSCAR_MAIN_TEMPLATE_DIR]
         ,
         'APP_DIRS': True,
+
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -133,10 +143,6 @@ TEMPLATES = [
                 'oscar.apps.checkout.context_processors.checkout',
                 'oscar.core.context_processors.metadata',
             ],
-            # 'loaders': [
-            #     'django.template.loaders.filesystem.Loader',
-            #     'django.template.loaders.app_directories.Loader',
-            # ],
         },
     },
 ]
