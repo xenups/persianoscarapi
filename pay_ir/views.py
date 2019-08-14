@@ -5,6 +5,10 @@ from django.http import (
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.conf import settings
+from django.views.generic import RedirectView
+from oscar.apps.checkout.mixins import OrderPlacementMixin, Basket
+from urllib3 import get_host
+
 from pay_ir.models import Payment
 import json
 import requests
@@ -58,6 +62,7 @@ def req(request):
             "api": settings.PAY_IR_CONFIG.get("api_key"),
             "amount": int(request.POST.get('amount')),
             "redirect": request.scheme + "://" + request.get_host() + reverse('verify'),
+            # "redirect": 'http' + "://" + "127.0.0.1/" + 'payment/verify',
             "mobile": request.POST.get('mobile'),
             "factorNumber": request.POST.get("factorNumber"),
             "description": request.POST.get('description'),
@@ -90,7 +95,6 @@ def req(request):
 
 @csrf_exempt
 def verfication(request, message=None):
-    print(request)
     if request.method == "GET":
         status_code = int(request.GET.get("status"))
         token = request.GET.get("token")
@@ -113,9 +117,9 @@ def verfication(request, message=None):
                     "amount": verify["amount"],
                     "factor_number": verify["factorNumber"],
                     "mobile": verify["mobile"],
-                    "description" : verify["description"],
-                    "card_number" : verify["cardNumber"],
-                    "trace_number" : verify["traceNumber"],
+                    "description": verify["description"],
+                    "card_number": verify["cardNumber"],
+                    "trace_number": verify["traceNumber"],
                 }
                 return render(request, "payir_success.html", data)
             else:

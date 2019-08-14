@@ -17,9 +17,10 @@
 {% block shipping_address %}{% endblock %}
 {% block shipping_method %}{% endblock %}
 {% block payment_method %}{% endblock %}
-
 {% block payment_details %}
     {% block payment_details_content %}
+        <a id="view_preview" href="{% url 'checkout:preview' %}"
+           class="btn btn-primary btn-lg">{% trans "Continue" %}</a>
         <h6 class="card-subtitle mb-2 text-muted">می‌توانید به آسانی مبلغ مورد نظر را واریز نمایید.</h6>
         <form class="form" action="{% url 'req_page' %}" method="POST">
             {% csrf_token %}
