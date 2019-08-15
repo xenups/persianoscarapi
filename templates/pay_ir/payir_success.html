@@ -1,18 +1,19 @@
 {% extends 'payir_base.html' %}
 {% block content %}
-<h4 class="success">پرداخت موفقیت آمیز</h4>
-<div>
-    <p>مبلغ: {{ amount }} ریال</p>
-    <p>شماره پیگیری: {{ trace_number }}</p>
-    <p>{{ card_number  }} : شماره کارت</p>
-    <p>{{ factor_number  }} : شماره فاکتور</p>
-    <p>{{ mobile  }} : شماره همراه</p>
-    <p>{{ description  }} : توضیحات</p>
-    <p>{{ message  }} : پیغام</p>
-<button type="submit" class="btn btn-redirect">بازگشت به سایت پذیرنده </button>
-<a class="btn btn-primary" href="/checkout/preview/">بازگشت به سایت پذیرنده</a>
+    <h4 class="success">پرداخت موفقیت آمیز</h4>
+    <div>
+        <p>مبلغ: {{ amount }} ریال</p>
+        <p>شماره پیگیری: {{ trace_number }}</p>
+        <p> شماره کارت:{{ card_number }}</p>
+        <p>شماره فاکتور:{{ factor_number }}</p>
+        <p>شماره همراه:{{ mobile }}</p>
+        <p>توضیحات:{{ description }}</p>
+        <p>پیغام:{{ message }}</p>
+        <form action="{% url 'redirect' %}" method="POST">
+            {% csrf_token %}
+            <input type="submit" class="btn" value="بازگشت به سایت پذیرنده" name="mybtn">
+        </form>
 
 
-
-</div>
+    </div>
 {% endblock %}

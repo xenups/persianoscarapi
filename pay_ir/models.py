@@ -22,6 +22,9 @@ class Payment(models.Model):
     transid = models.IntegerField(
         verbose_name="شماره فاکتور"
     )
+    factor_number = models.IntegerField(
+        verbose_name="شماره فاکتور"
+    )
     status = models.BooleanField(
         verbose_name="وضعیت", default=False
     )

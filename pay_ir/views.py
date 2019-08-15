@@ -1,17 +1,52 @@
 from django.shortcuts import render, redirect
 from django.http import (
-    HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponse
-)
+    HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponse,
+    Http404)
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.conf import settings
 from django.views.generic import RedirectView
 from oscar.apps.checkout.mixins import OrderPlacementMixin, Basket
+from oscar.apps.partner.strategy import Selector
 from urllib3 import get_host
 
 from pay_ir.models import Payment
 import json
 import requests
+
+
+class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
+    """
+    here we verify payment was done and place the actual order
+    then redirect to thank you page
+    """
+    permanent = False
+
+    def get_redirect_url(self, ):
+        basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
+        basket.strategy = Selector().strategy()
+        order_number = self.checkout_session.get_order_number()
+        shipping_address = self.get_shipping_address(basket)
+        shipping_method = self.get_shipping_method(basket, shipping_address)
+        shipping_charge = shipping_method.calculate(basket)
+        billing_address = self.get_billing_address(shipping_address)
+        order_total = self.get_order_totals(basket, shipping_charge=shipping_charge)
+        order_kwargs = {}
+        # make sure payment was actually paid
+        data_query = \
+            Payment.objects.filter(factor_number=order_number, status=1, amount=float(order_total.incl_tax)).order_by(
+                '-id')[0]
+        if data_query is None:
+            raise Http404
+        # CustomPayment.objects.get(order_number=order_number, payed_sum=str(float(order_total.incl_tax)))
+        user = self.request.user
+        if not user.is_authenticated:
+            order_kwargs['guest_email'] = self.checkout_session.get_guest_email()
+        self.handle_order_placement(
+            order_number, user, basket, shipping_address, shipping_method,
+            shipping_charge, billing_address, order_total, **order_kwargs
+        )
+        return '/checkout/thank-you/'
 
 
 def method_not_allowed():
@@ -80,7 +115,8 @@ def req(request):
                          mobile=data_dict["mobile"],
                          description=data_dict["description"],
                          token=token,
-                         transid=data_dict["transaction"]
+                         transid=data_dict["transaction"],
+                         factor_number=data_dict["factorNumber"]
                          )
             db.save()
             print("https://pay.ir/pg/{}".format(str(token)))
@@ -110,7 +146,10 @@ def verfication(request, message=None):
             if data_query.status == 0 and data_query.amount == int(verify["amount"]):
                 data_query.status = 1
                 data_query.card_number = verify["cardNumber"]
-                data_query.trace_number = verify["traceNumber"]
+                data_query.trace_number = verify["transId"]
+                data_query.factor_number = int(verify["factorNumber"])
+                data_query.mobile = verify["mobile"]
+                data_query.description = verify["description"]
                 data_query.message = message
                 data_query.save()
                 data = {
@@ -119,7 +158,7 @@ def verfication(request, message=None):
                     "mobile": verify["mobile"],
                     "description": verify["description"],
                     "card_number": verify["cardNumber"],
-                    "trace_number": verify["traceNumber"],
+                    "trace_number": verify["transId"],
                 }
                 return render(request, "payir_success.html", data)
             else:
