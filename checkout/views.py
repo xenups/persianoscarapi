@@ -1,6 +1,6 @@
 import os
 
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseNotAllowed, HttpResponseBadRequest
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseNotAllowed, HttpResponseBadRequest, request
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -50,35 +50,6 @@ class globals():
     dl_link = ""
 
 
-class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
-    """
-    here we verify payment was done and place the actual order
-    then redirect to thank you page
-    """
-    permanent = False
-
-    def get_redirect_url(self, ):
-        basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
-        # basket.strategy = CustomStrategy()
-        order_number = self.checkout_session.get_order_number()
-        shipping_address = self.get_shipping_address(basket)
-        shipping_method = self.get_shipping_method(basket, shipping_address)
-        shipping_charge = shipping_method.calculate(basket)
-        billing_address = self.get_billing_address(shipping_address)
-        order_total = self.get_order_totals(basket, shipping_charge=shipping_charge)
-        order_kwargs = {}
-        # make sure payment was actually paid
-        # CustomPayment.objects.get(order_number=order_number, payed_sum=str(float(order_total.incl_tax)))
-        user = self.request.user
-        if not user.is_authenticated():
-            order_kwargs['guest_email'] = self.checkout_session.get_guest_email()
-        self.handle_order_placement(
-            order_number, user, basket, shipping_address, shipping_method,
-            shipping_charge, billing_address, order_total, **order_kwargs
-        )
-        return '/checkout/thank-you/'
-
-
 class PaymentDetailsView(BasePaymentDetailsView):
     def handle_payment(self, order_number, total, **kwargs):
         print("salam khaaare jooonam")
@@ -93,7 +64,8 @@ class PaymentDetailsView(BasePaymentDetailsView):
         data_dict = {
             "api": settings.PAY_IR_CONFIG.get("api_key"),
             "amount": int(total.incl_tax),
-            "redirect": "http" + "://" "127.0.0.1:8000" + '/payment/verify',
+            # "redirect": "http" + "://" "127.0.0.1:8000" + '/payment/verify',
+            "redirect": self.request.scheme + "://" + self.request.get_host() + '/payment/verify',
             "mobile": "09210419379",
             "factorNumber": order_number,
             "description": "ye kharide kheili khub",

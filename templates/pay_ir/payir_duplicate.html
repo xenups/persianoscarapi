@@ -1,4 +1,9 @@
 {% extends 'payir_base.html' %}
 {% block content %}
-<h4>پرداخت تکراری می‌باشد</h4>
+    <h4>پرداخت تکراری می‌باشد</h4>
+    <form action="{% url 'redirect' %}" method="POST">
+        {% csrf_token %}
+        <input type="submit" class="btn" value="بازگشت به سایت پذیرنده" name="mybtn">
+    </form>
+
 {% endblock %}
