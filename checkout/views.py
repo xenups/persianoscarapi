@@ -1,33 +1,23 @@
 import os
-
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseNotAllowed, HttpResponseBadRequest, request
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseNotAllowed, HttpResponseBadRequest, request, \
+    Http404
 from django.shortcuts import render, redirect
-from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import RedirectView
-from guardian.shortcuts import assign_perm
 from oscar.apps.checkout.views import PaymentDetailsView as BasePaymentDetailsView, \
     ThankYouView as ThankYouViewBasement, OrderPlacementMixin, Basket
-from oscar.apps.payment.admin import SourceType
-from oscar.apps.payment.models import Source
-from paymentexpress.gateway import PURCHASE
-from urllib3 import get_host
-
-import digital
-from checkout.tasks import download_process
-from digital import views
+from django.views.generic import RedirectView
+from oscar.apps.checkout.mixins import OrderPlacementMixin, Basket
+from oscar.apps.partner.strategy import Selector
 from oscar.apps.payment.exceptions import *
-import requests
-import datetime
-from oscar.apps.payment.forms import BankcardForm
-
-# Create your views here.
 from digital.models import Abstractdigital
 from shopify2 import settings
 
 from pay_ir.models import Payment
 import json
 import requests
+
+
+class Globals:
+    dl_link = ""
 
 
 def method_not_allowed():
@@ -46,8 +36,48 @@ def error_code_message(response):
     ))
 
 
-class Globals:
-    dl_link = ""
+class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
+    permanent = False
+
+    def get_redirect_url(self, ):
+        basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
+        basket.strategy = Selector().strategy()
+        order_number = self.checkout_session.get_order_number()
+        shipping_address = self.get_shipping_address(basket)
+        shipping_method = self.get_shipping_method(basket, shipping_address)
+        shipping_charge = shipping_method.calculate(basket)
+        billing_address = self.get_billing_address(shipping_address)
+        order_total = self.get_order_totals(basket, shipping_charge=shipping_charge)
+        order_kwargs = {}
+
+        # make sure payment was actually paid
+        try:
+            data_query = \
+                Payment.objects.get(factor_number=order_number, status=1, amount=float(order_total.incl_tax))
+        except Payment.DoesNotExist:
+            data_query = None
+            self.restore_frozen_basket()
+            raise Http404
+        user = self.request.user
+        if not user.is_authenticated:
+            order_kwargs['guest_email'] = self.checkout_session.get_guest_email()
+        self.handle_order_placement(
+            order_number, user, basket, shipping_address, shipping_method,
+            shipping_charge, billing_address, order_total, **order_kwargs
+        )
+        self.add_payment_source("asan pardakht")
+
+        self.add_payment_event('pre-auth', order_total.incl_tax, "asan pardakht")
+        return '/checkout/thank-you/'
+
+
+class PaymentFailed(OrderPlacementMixin, RedirectView):
+    def get_redirect_url(self, ):
+        user = self.request.user
+        if user.is_authenticated:
+            self.restore_frozen_basket()
+            return '/checkout/preview/'
+        raise Http404
 
 
 class PaymentDetailsView(BasePaymentDetailsView):
@@ -93,6 +123,7 @@ class PaymentDetailsView(BasePaymentDetailsView):
         else:
             return error_code_message(response)
         raise HttpResponse(content=redirect)
+
 
 def handle_successful_order(self, order):
     print(self.get_message_context(order))
