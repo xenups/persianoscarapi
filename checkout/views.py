@@ -46,7 +46,7 @@ def error_code_message(response):
     ))
 
 
-class globals():
+class Globals:
     dl_link = ""
 
 
@@ -112,7 +112,7 @@ def handle_successful_order(self, order):
             dl_link = os.path.join(settings.MEDIA_ROOT, value.value.name)
             host = "http://127.0.0.1:8000/media/"
             address = host + value.value.name
-            globals.dl_link = address
+            Globals.dl_link = address
             print(address)
             # these lines are just for test
             # download_process.delay(dl_link, value.value.name)
@@ -150,7 +150,7 @@ class ThankYouView(ThankYouViewBasement):
         # Remember whether this view has been loaded.
         # Only send tracking information on the first load.
         ctx['somevalue'] = "دانلود ها"
-        ctx['download_link'] = globals.dl_link
+        ctx['download_link'] = Globals.dl_link
         key = 'order_{}_thankyou_viewed'.format(ctx['order'].pk)
         if not self.request.session.get(key, False):
             self.request.session[key] = True
