@@ -51,7 +51,10 @@ class globals():
 
 
 class PaymentDetailsView(BasePaymentDetailsView):
+    preview = False
+
     def handle_payment(self, order_number, total, **kwargs):
+
         print("salam khaaare jooonam")
         """ This function call pay.ir API and redirect user to payment page. """
         if total.incl_tax is None:
@@ -90,7 +93,6 @@ class PaymentDetailsView(BasePaymentDetailsView):
         else:
             return error_code_message(response)
         raise HttpResponse(content=redirect)
-
 
 def handle_successful_order(self, order):
     print(self.get_message_context(order))

@@ -10,6 +10,7 @@ from oscar.apps.checkout.mixins import OrderPlacementMixin, Basket
 from oscar.apps.partner.strategy import Selector
 from urllib3 import get_host
 
+from pay_ir import models
 from pay_ir.models import Payment
 import json
 import requests
@@ -40,12 +41,16 @@ class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
             raise Http404
         # CustomPayment.objects.get(order_number=order_number, payed_sum=str(float(order_total.incl_tax)))
         user = self.request.user
+        reference = "asan pardakht"
         if not user.is_authenticated:
             order_kwargs['guest_email'] = self.checkout_session.get_guest_email()
         self.handle_order_placement(
             order_number, user, basket, shipping_address, shipping_method,
             shipping_charge, billing_address, order_total, **order_kwargs
         )
+        self.add_payment_source("asan pardakht")
+
+        self.add_payment_event('pre-auth', order_total.incl_tax, "asan pardakht")
         return '/checkout/thank-you/'
 
 
@@ -101,7 +106,7 @@ def req(request):
             "mobile": request.POST.get('mobile'),
             "factorNumber": request.POST.get("factorNumber"),
             "description": request.POST.get('description'),
-            "transaction": request.POST.get('transaction'),
+
         }
         print(data_dict)
 
@@ -142,7 +147,7 @@ def verfication(request, message=None):
             return render(request, "payir_fail.html", data)
         verify = verify_trans(token)
         if verify["status"] == 1:
-            data_query = Payment.objects.filter(token=token).order_by('-id')[0]
+            data_query = Payment.objects.get(token=token, factor_number=int(verify["factorNumber"]))
             if data_query.status == 0 and data_query.amount == int(verify["amount"]):
                 data_query.status = 1
                 data_query.card_number = verify["cardNumber"]
