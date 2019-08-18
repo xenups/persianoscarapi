@@ -2,11 +2,13 @@ import os
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseNotAllowed, HttpResponseBadRequest, request, \
     Http404
 from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
 from oscar.apps.checkout.views import PaymentDetailsView as BasePaymentDetailsView, \
     ThankYouView as ThankYouViewBasement, OrderPlacementMixin, Basket
 from django.views.generic import RedirectView
 from oscar.apps.checkout.mixins import OrderPlacementMixin, Basket
 from oscar.apps.partner.strategy import Selector
+from oscar.apps.payment import models
 from oscar.apps.payment.exceptions import *
 from digital.models import Abstractdigital
 from shopify2 import settings
@@ -40,7 +42,13 @@ class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
     permanent = False
 
     def get_redirect_url(self, ):
-        basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
+        try:
+            basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
+        except Basket.DoesNotExist:
+            return reverse_lazy('checkout:preview')
+
+        shipping_address = self.get_shipping_address(basket)
+        billing_address = self.get_billing_address(shipping_address=shipping_address)
         basket.strategy = Selector().strategy()
         order_number = self.checkout_session.get_order_number()
         shipping_address = self.get_shipping_address(basket)
@@ -55,20 +63,28 @@ class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
             data_query = \
                 Payment.objects.get(factor_number=order_number, status=1, amount=float(order_total.incl_tax))
         except Payment.DoesNotExist:
+            # if payment was not going in correct way it will return to checkoutperview
             data_query = None
             self.restore_frozen_basket()
-            raise Http404
+            return reverse_lazy('checkout:preview')
         user = self.request.user
         if not user.is_authenticated:
             order_kwargs['guest_email'] = self.checkout_session.get_guest_email()
+
         self.handle_order_placement(
             order_number, user, basket, shipping_address, shipping_method,
             shipping_charge, billing_address, order_total, **order_kwargs
         )
-        self.add_payment_source("asan pardakht")
+        # source_type, is_created = models.SourceType.objects.get_or_create(
+        #     name='AsanPardakht')
+        # source = source_type.sources.model(
+        #     source_type=source_type,
+        #     amount_allocated=19500,
+        # )
+        # self.add_payment_source(source)
+        # self.add_payment_event('AsanPardakht', 19500)
 
-        self.add_payment_event('pre-auth', order_total.incl_tax, "asan pardakht")
-        return '/checkout/thank-you/'
+        return reverse_lazy('checkout:thank-you')
 
 
 class PaymentFailed(OrderPlacementMixin, RedirectView):
@@ -76,7 +92,7 @@ class PaymentFailed(OrderPlacementMixin, RedirectView):
         user = self.request.user
         if user.is_authenticated:
             self.restore_frozen_basket()
-            return '/checkout/preview/'
+            return reverse_lazy('checkout:preview')
         raise Http404
 
 
@@ -181,6 +197,7 @@ class ThankYouView(ThankYouViewBasement):
         # Remember whether this view has been loaded.
         # Only send tracking information on the first load.
         ctx['somevalue'] = "دانلود ها"
+
         ctx['download_link'] = Globals.dl_link
         key = 'order_{}_thankyou_viewed'.format(ctx['order'].pk)
         if not self.request.session.get(key, False):

@@ -3,55 +3,12 @@ from django.http import (
     HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponse,
     Http404)
 from django.views.decorators.csrf import csrf_exempt
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.conf import settings
-from django.views.generic import RedirectView
-from oscar.apps.checkout.mixins import OrderPlacementMixin, Basket
-from oscar.apps.partner.strategy import Selector
-from urllib3 import get_host
 
-from pay_ir import models
 from pay_ir.models import Payment
 import json
 import requests
-
-
-class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
-    """
-    here we verify payment was done and place the actual order
-    then redirect to thank you page
-    """
-    permanent = False
-
-    def get_redirect_url(self, ):
-        basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
-        basket.strategy = Selector().strategy()
-        order_number = self.checkout_session.get_order_number()
-        shipping_address = self.get_shipping_address(basket)
-        shipping_method = self.get_shipping_method(basket, shipping_address)
-        shipping_charge = shipping_method.calculate(basket)
-        billing_address = self.get_billing_address(shipping_address)
-        order_total = self.get_order_totals(basket, shipping_charge=shipping_charge)
-        order_kwargs = {}
-        # make sure payment was actually paid
-        data_query = \
-            Payment.objects.filter(factor_number=order_number, status=1, amount=float(order_total.incl_tax)).order_by(
-                '-id')[0]
-        if data_query is None:
-            raise Http404
-        # CustomPayment.objects.get(order_number=order_number, payed_sum=str(float(order_total.incl_tax)))
-        user = self.request.user
-        reference = "asan pardakht"
-        if not user.is_authenticated:
-            order_kwargs['guest_email'] = self.checkout_session.get_guest_email()
-        self.handle_order_placement(
-            order_number, user, basket, shipping_address, shipping_method,
-            shipping_charge, billing_address, order_total, **order_kwargs
-        )
-        self.add_payment_source("asan pardakht")
-
-        self.add_payment_event('pre-auth', order_total.incl_tax, "asan pardakht")
-        return '/checkout/thank-you/'
 
 
 def method_not_allowed():
@@ -78,7 +35,6 @@ def verify_trans(token):
     }
     headers = {"Content-Type": "application/json", }
     resp = requests.post(url, data=json.dumps(data), headers=headers)
-    print(resp)
     return resp.json()
 
 
@@ -102,13 +58,11 @@ def req(request):
             "api": settings.PAY_IR_CONFIG.get("api_key"),
             "amount": int(request.POST.get('amount')),
             "redirect": request.scheme + "://" + request.get_host() + reverse('verify'),
-            # "redirect": 'http' + "://" + "127.0.0.1/" + 'payment/verify',
             "mobile": request.POST.get('mobile'),
             "factorNumber": request.POST.get("factorNumber"),
             "description": request.POST.get('description'),
 
         }
-        print(data_dict)
 
         request_api = requests.post(
             url, data=json.dumps(data_dict), headers=headers
@@ -128,14 +82,12 @@ def req(request):
             return redirect("https://pay.ir/pg/{}".format(str(token)))
         else:
             return error_code_message(response)
-        return HttpResponse(content=redirect)
-
     else:
         return method_not_allowed()
 
 
 @csrf_exempt
-def verfication(request, message=None):
+def verification(request, message=None):
     if request.method == "GET":
         status_code = int(request.GET.get("status"))
         token = request.GET.get("token")

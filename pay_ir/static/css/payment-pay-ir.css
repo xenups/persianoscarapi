@@ -1,0 +1,33 @@
+body {
+    background-color: #f9f9f9;
+    font-family: "Vazir";
+    direction: rtl;
+    text-align: right;
+}
+.content {
+    margin-top: 50px;
+}
+.content .card {
+    max-width: 50em;
+    margin: 1em;
+    position: absolute;
+    margin: auto;
+    right: 0;
+    left: 0;
+}
+.form {
+    margin-top: 2em;
+}
+.copyright {
+    text-align: left;
+    font-size: .8em;
+    direction: ltr;
+}
+.fail{
+    margin-top: 2em;
+    color: red;
+}
+.success{
+    margin-top: 2em;
+    color: green;
+}
