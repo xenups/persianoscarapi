@@ -40,7 +40,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESTFUL_SERIALIZER = 'json'
 CELERY_AMQP_TASK_RESULT_EXPIRES = 1000
 
-ALLOWED_HOSTS = ['192.168.1.104', '*']
+ALLOWED_HOSTS = ['*']
 
 PAYPAL_API_USERNAME = 'xenups-facilitator_api1.outlook.com'
 PAYPAL_API_PASSWORD = '2T6697D6TBDVLUB2'
@@ -66,6 +66,7 @@ INSTALLED_APPS = [
                      'catalogue',
                      'checkout',
                      'promotions',
+                     'shipping',
                      'digital',
                      'guardian',
                      'paypal',
