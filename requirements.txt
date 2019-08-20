@@ -13,7 +13,7 @@ django-extra-views==0.11.0
 django-guardian==2.0.0
 django-haystack==2.8.1
 django-localflavor==2.2
-django-oscar==1.6
+django-oscar==1.6.1
 django-oscar-api==1.6.1
 django-oscar-paymentexpress==0.1.1
 django-oscar-paypal==1.0.0

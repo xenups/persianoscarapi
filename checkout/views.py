@@ -7,6 +7,7 @@ from oscar.apps.checkout.views import PaymentDetailsView as BasePaymentDetailsVi
     ThankYouView as ThankYouViewBasement, OrderPlacementMixin, Basket
 from django.views.generic import RedirectView
 from oscar.apps.checkout.mixins import OrderPlacementMixin, Basket
+from oscar.apps.offer.applicator import Applicator
 from oscar.apps.partner.strategy import Selector
 from oscar.apps.payment import models
 from oscar.apps.payment.exceptions import *
@@ -45,11 +46,13 @@ class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
         try:
             basket = Basket.objects.get(pk=self.checkout_session.get_submitted_basket_id())
         except Basket.DoesNotExist:
+            print("basket problem")
             return reverse_lazy('checkout:preview')
 
         shipping_address = self.get_shipping_address(basket)
         billing_address = self.get_billing_address(shipping_address=shipping_address)
-        basket.strategy = Selector().strategy()
+        basket.strategy = Selector().strategy(self.request)
+        Applicator().apply(basket, self.request.user, request=self.request)
         order_number = self.checkout_session.get_order_number()
         shipping_address = self.get_shipping_address(basket)
         shipping_method = self.get_shipping_method(basket, shipping_address)
@@ -63,6 +66,7 @@ class CustomCheckoutDone(OrderPlacementMixin, RedirectView):
             data_query = \
                 Payment.objects.get(factor_number=order_number, status=1, amount=float(order_total.incl_tax))
         except Payment.DoesNotExist:
+            print("query problem")
             # if payment was not going in correct way it will return to checkoutperview
             data_query = None
             self.restore_frozen_basket()
