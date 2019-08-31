@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 import json
-from shopify2.celery import app
+from persianoscar.celery import app
 from time import sleep
 from celery.utils.log import get_task_logger
 

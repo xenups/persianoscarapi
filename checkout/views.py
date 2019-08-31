@@ -12,7 +12,7 @@ from oscar.apps.partner.strategy import Selector
 from oscar.apps.payment import models
 from oscar.apps.payment.exceptions import *
 from digital.models import Abstractdigital
-from shopify2 import settings
+from persianoscar import settings
 
 from pay_ir.models import Payment
 import json
