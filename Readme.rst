@@ -19,4 +19,4 @@ persian oscar api based on django oscar 1.6 . its allow to using various persian
 in oscar e-commerce such as persian payment integrating , iranian currency , language and
 shipping  methods , its also using oscar api package to provide restful functionality
 
-.. image::https://github.com/xenups/persianoscarapi/raw/screenshot.jpg
+.. image::https://github.com/xenups/persianoscarapi/blob/master/raw/screenshot.jpg
