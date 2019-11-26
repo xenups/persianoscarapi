@@ -6,7 +6,8 @@ from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 
 class Product(AbstractProduct):
-    video_url = models.URLField()
+    pass
+    # video_url = models.URLField()
 
     # class Meta:
     #     permissions = (('assign_sold', 'Assign sold'),)
