@@ -24,7 +24,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'a%q=9pm!%&g4(r%-^jn9w@%mdei3bdc2%5uskvg1lsu!c#hnqm'
-OSCAR_SHOP_NAME = "اسم فروشگاه"
+OSCAR_SHOP_NAME = "دسته بیل فروشی"
 
 OSCAR_DEFAULT_CURRENCY = 'IRR'
 # OSCAR_PROMOTION_POSITIONS = (('catalogue', 'Catalogue'),
