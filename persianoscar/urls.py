@@ -32,7 +32,8 @@ urlpatterns = [
     url(r'^i18n/', include('django.conf.urls.i18n')),
     # url(r'', oscar.urls),
     path('oscarapi/', api.urls),
-    # url(r'^$', RedirectView.as_view(url='/catalogue/')),
+
+    url(r'^$', RedirectView.as_view(url='/catalogue/')),
     url(r'', application.urls),
     url(r'^checkout/paypal/', include('paypal.express.urls')),
     url(r'^payment/', include('pay_ir.urls'))
