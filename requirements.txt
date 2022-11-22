@@ -30,7 +30,7 @@ kombu==4.6.3
 mock==2.0.0
 pbr==5.4.1
 phonenumbers==8.10.15
-Pillow==6.2.0
+Pillow==9.3.0
 purl==1.5
 pycountry==19.7.15
 python-dateutil==2.8.0
